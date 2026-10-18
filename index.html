@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a0c">
+<title>Afterglow — an AI dating sim</title>
+<meta name="description" content="Three nights in Port Lumen. One conversation that never plays the same twice. A photorealistic AI dating sim in your browser.">
+<link rel="icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="assets/img/icon.png">
+<meta property="og:title" content="Afterglow — an AI dating sim">
+<meta property="og:description" content="Talk to Elena in your own words. She remembers. She reacts. 3 nights, 3 endings.">
+<meta property="og:image" content="https://andremka030.github.io/afterglow/assets/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="assets/fonts/Inter-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Cormorant-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- LOADER -->
+  <div id="loader"><div class="ld-logo">Afterglow</div><div class="ld-bar"><i id="ld-fill"></i></div></div>
+
+  <!-- TITLE -->
+  <section id="s-title" class="screen active">
+    <div class="bg kb" style="--img:url(assets/img/title.webp)"></div>
+    <div class="shade-left"></div>
+    <div class="corner"><button class="sound" type="button" aria-label="Sound">Sound · off</button></div>
+    <div class="title-wrap">
+      <div class="kicker">An AI dating sim</div>
+      <h1 class="logo">Afterglow</h1>
+      <p class="tag">Three nights in Port Lumen.<br>Say anything — she remembers.</p>
+      <label class="name-field"><span>Your name</span><input id="player-name" maxlength="20" placeholder="Alex" autocomplete="off"></label>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-new">New game</button>
+        <button class="btn ghost" id="btn-continue" hidden>Continue</button>
+      </div>
+      <div class="meta-row"><span id="mode-badge" class="badge">checking…</span><span class="sep">·</span><a class="kofi" id="kofi-title" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>
+    </div>
+    <div class="foot">18+ fictional characters · PG-13 · No explicit content</div>
+  </section>
+
+  <!-- CHARACTER SELECT -->
+  <section id="s-select" class="screen">
+    <div class="bg dim" style="--img:url(assets/img/bg_hotel.webp)"></div>
+    <header class="top"><button class="back" data-back="s-title" type="button">← Back</button><div class="step">Who are you meeting tonight?</div><span></span></header>
+    <div class="cards">
+      <article class="card pick" id="card-elena" tabindex="0">
+        <img src="assets/img/elena_card.webp" alt="Elena">
+        <div class="card-info"><div class="name">Elena</div><div class="role">28 · Street photographer</div><div class="tagline">Witty, guarded, hates clichés.</div><div class="pill">Available</div></div>
+      </article>
+      <article class="card locked" id="card-maya" tabindex="0">
+        <img src="assets/img/maya.webp" alt="Maya">
+        <div class="card-info"><div class="name">Maya</div><div class="role">30 · Startup founder</div><div class="tagline">Sharp, elegant, always busy.</div><div class="pill">Premium</div></div>
+      </article>
+      <article class="card soon" id="card-sasha" tabindex="0">
+        <img src="assets/img/sasha.webp" alt="Sasha">
+        <div class="card-info"><div class="name">Sasha</div><div class="role">25 · Street racer</div><div class="tagline">Wild, loyal, fast.</div><div class="pill">Coming soon</div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- LOCATION SELECT -->
+  <section id="s-map" class="screen">
+    <div class="bg dim" id="map-bg" style="--img:url(assets/img/bg_hotel.webp)"></div>
+    <header class="top hud"></header>
+    <div class="map-wrap">
+      <div class="map-head"><div class="kicker" id="map-day">Night 1 of 3</div><h2>Where will you take her?</h2></div>
+      <div class="locs">
+        <button class="loc" data-loc="hotel"><img src="assets/img/bg_hotel.webp" alt=""><div><b>The Lumen Hotel</b><span>Marble, low light, quiet jazz</span></div><em class="visited">Visited</em></button>
+        <button class="loc" data-loc="rooftop"><img src="assets/img/bg_rooftop.webp" alt=""><div><b>Skyline Rooftop</b><span>Cocktails above the city</span></div><em class="visited">Visited</em></button>
+        <button class="loc" data-loc="beach"><img src="assets/img/bg_beach.webp" alt=""><div><b>Coral Bay</b><span>Dusk, sand, white cabanas</span></div><em class="visited">Visited</em></button>
+        <button class="loc" data-loc="market"><img src="assets/img/bg_market.webp" alt=""><div><b>Lantern Market</b><span>Street food in the rain</span></div><em class="visited">Visited</em></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATE (visual-novel layout) -->
+  <section id="s-date" class="screen">
+    <div class="bg" id="date-bg"></div>
+    <div class="heroine"><div class="breath"><img id="elena-img" src="assets/img/elena_neutral.webp" alt="Elena"><img id="elena-img-b" class="fadeimg" alt=""><div class="grade" id="grade"></div></div></div>
+    <div class="vignette"></div>
+    <header class="top hud"></header>
+    <aside class="history" id="history" hidden>
+      <div class="chat-head"><span>Conversation</span><button class="close-x" id="history-x" type="button" aria-label="Close">✕</button></div>
+      <div class="log" id="log"></div>
+    </aside>
+    <div class="vn">
+      <div class="vn-name"><b>Elena</b><span id="emotion-tag" class="emo">neutral</span><span class="delta" id="delta"></span><span class="turns" id="turns"></span></div>
+      <div class="you" id="you"></div>
+      <div class="line" id="line"></div>
+      <div class="suggest" id="suggest"></div>
+      <form class="input" id="chat-form" autocomplete="off">
+        <button class="ghost-icon" id="history-btn" type="button" title="Conversation history" aria-label="History">≡</button>
+        <input id="chat-input" maxlength="400" placeholder="Say something…">
+        <button class="send" id="send" aria-label="Send">→</button>
+      </form>
+      <button class="link" id="end-date" type="button">End the date</button>
+    </div>
+  </section>
+
+  <!-- PHONE -->
+  <section id="s-phone" class="screen">
+    <div class="bg dim-soft" style="--img:url(assets/img/bg_apartment.webp)"></div>
+    <header class="top hud"></header>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="ph-head"><img src="assets/img/elena_card.webp" alt=""><div><b>Elena</b><small id="ph-status">online</small></div></div>
+      <div class="ph-tabs"><button class="on" data-tab="chat">Messages</button><button data-tab="mem">Memories</button></div>
+      <div class="ph-body" id="ph-chat"></div>
+      <div class="ph-body" id="ph-mem" hidden></div>
+      <div class="ph-replies" id="ph-replies"></div>
+      <button class="btn primary wide" id="btn-sleep">Sleep — next night</button>
+    </div>
+  </section>
+
+  <!-- ENDING -->
+  <section id="s-end" class="screen">
+    <div class="bg kb" id="end-bg"></div>
+    <div class="end-shade"></div>
+    <div class="end-heroine"><img id="end-img" alt=""></div>
+    <div class="end-body">
+      <div class="kicker" id="end-kicker">Ending</div>
+      <h2 id="end-title"></h2>
+      <p id="end-text"></p>
+      <div class="end-stats" id="end-stats"></div>
+      <div class="btn-row">
+        <a class="btn primary" id="btn-share" target="_blank" rel="noopener">Share on X</a>
+        <button class="btn ghost" id="btn-restart">Play again</button>
+      </div>
+      <p class="tease"><a class="kofi" id="kofi-end" target="_blank" rel="noopener">☕ Buy me a coffee</a><span class="sep">·</span>Maya &amp; Sasha are next — follow <a href="https://x.com/worldmarketcup" target="_blank" rel="noopener">@worldmarketcup</a></p>
+    </div>
+  </section>
+
+  <!-- MODAL -->
+  <div class="modal" id="modal" hidden><div class="modal-box"><button class="close-x close" id="modal-x" aria-label="Close">✕</button><div id="modal-body"></div></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<template id="hud-tpl">
+  <div class="brand">Afterglow</div>
+  <div class="hud-day">Night <span class="h-day">1</span> / 3</div>
+  <div class="meter"><div class="meter-top"><span class="h-level">Strangers</span><span class="h-val">0</span></div><div class="bar"><i class="h-fill"></i></div></div>
+  <div class="msgs" title="Free AI messages left today"><span class="h-msgs">40</span> left</div>
+  <button class="sound" type="button" aria-label="Sound">♪</button>
+</template>
+
+<script>document.addEventListener("error",e=>{if(e.target.tagName==="IMG")e.target.style.visibility="hidden"},true);document.addEventListener("load",e=>{if(e.target.tagName==="IMG")e.target.style.visibility=""},true);</script>
+<script src="js/config.js"></script>
+<script src="js/fallback.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

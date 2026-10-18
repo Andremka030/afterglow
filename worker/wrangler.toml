@@ -1,0 +1,35 @@
+name = "afterglow-proxy"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+# OpenAI-compatible provider. xAI by default; for OpenAI use https://api.openai.com/v1 + e.g. gpt-4o-mini
+LLM_BASE_URL = "https://api.x.ai/v1"
+LLM_MODEL = "grok-4.20-0309-non-reasoning"
+# Comma-separated list of sites allowed to call this proxy
+ALLOWED_ORIGINS = "https://andremka030.github.io,http://localhost:8080,http://localhost:8090,http://127.0.0.1:8080,http://localhost:8787"
+RATE_PER_MIN = "20"
+RATE_PER_DAY = "300"   # per IP / IPv6 /48, all routes (chat+summary+tts)
+MAX_USER_CHARS = "400"
+# Voice (POST /tts {text}) — xAI TTS, uses the same LLM_API_KEY (xAI key)
+TTS_VOICE = "ara"
+TTS_MAX_CHARS = "600"
+
+# The API key is NOT here. Set it as a secret:
+#   npx wrangler secret put LLM_API_KEY
+
+# Per-IP rate limit enforced by Cloudflare (free Rate Limiting binding): 20 POSTs / 60 s per IP
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }
+
+# Exact per-IP limiter (Durable Object, SQLite-backed = available on the free plan)
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "Limiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limiter"]

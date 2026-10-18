@@ -1,0 +1,9 @@
+{
+  "name": "afterglow",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev/server.mjs",
+    "deploy:worker": "cd worker && npx wrangler deploy"
+  }
+}
