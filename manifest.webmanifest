@@ -1,0 +1,21 @@
+{
+  "name": "AFTERGLOW",
+  "short_name": "Afterglow",
+  "description": "An AI dating sim. Three nights in Port Lumen — chat with Elena in your own words.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0c10",
+  "theme_color": "#0e0c10",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "docs/mobile.jpg", "sizes": "390x844", "type": "image/jpeg", "form_factor": "narrow", "label": "A date with Elena" }
+  ]
+}

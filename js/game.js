@@ -28,53 +28,66 @@
   function spend() { const q = quota(); q.used++; localStorage.setItem(QUOTA_KEY, JSON.stringify(q)); }
 
   // ---------- UI helpers ----------
-  function show(id) { $$(".screen").forEach(s => s.classList.toggle("active", s.id === id)); hud(); }
-  function toast(t, ms = 2600) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), ms); }
-  function modal(html) { $("#modal-body").innerHTML = html; $("#modal").hidden = false; $$("#modal-body [data-kofi]").forEach(a => a.href = C.KOFI_URL); }
-  $("#modal-x").onclick = () => $("#modal").hidden = true;
-  $("#modal").onclick = e => { if (e.target.id === "modal") $("#modal").hidden = true; };
-  $$(".hud").forEach(h => h.appendChild($("#hud-tpl").content.cloneNode(true)));
-  $$("a.kofi, #kofi-end").forEach(a => a.href = C.KOFI_URL);
+  const haptic = (ms = 8) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+  const BD = { "s-title": "title", "s-select": "title", "s-map": "bg_hotel", "s-phone": "bg_apartment" };
+  function show(id) {
+    $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+    const bd = id === "s-date" || id === "s-end" ? null : BD[id];
+    if (bd) document.body.style.setProperty("--bd", `url(${img(bd)})`);
+    hud();
+  }
+  function toast(t, ms = 2400) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), ms); }
+  // bottom sheet
+  function modal(html) {
+    const m = $("#modal"); m.classList.remove("closing"); $("#modal-body").innerHTML = html; m.hidden = false;
+    $$("#modal-body [data-kofi]").forEach(a => a.href = C.KOFI_URL);
+    $$("#modal-body [data-close]").forEach(b => b.onclick = closeSheet);
+  }
+  function closeSheet() { const m = $("#modal"); if (m.hidden || m.classList.contains("closing")) return; m.classList.add("closing"); setTimeout(() => { m.hidden = true; m.classList.remove("closing"); }, 240); }
+  $("#modal").onclick = e => { if (e.target.id === "modal") closeSheet(); };
+  (() => { // drag sheet down to dismiss
+    const box = $(".sheet-box"); let y0 = null, dy = 0;
+    box.addEventListener("touchstart", e => { if (box.scrollTop <= 0) { y0 = e.touches[0].clientY; dy = 0; box.style.transition = "none"; } }, { passive: true });
+    box.addEventListener("touchmove", e => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); box.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    box.addEventListener("touchend", () => { if (y0 === null) return; box.style.transition = ""; box.style.transform = ""; if (dy > 90) closeSheet(); y0 = null; });
+  })();
+  $$("a.kofi").forEach(a => a.href = C.KOFI_URL);
+  const R = 15.5, CIRC = 2 * Math.PI * R;
+  const ringSvg = a => `<svg viewBox="0 0 36 36"><circle class="rg-bg" cx="18" cy="18" r="${R}"/><circle class="rg-fg" cx="18" cy="18" r="${R}" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - a / 100)}"/></svg>`;
   function hud() {
     if (!S) return;
-    $$(".h-day").forEach(e => e.textContent = S.day);
-    $$(".h-level").forEach(e => e.textContent = level(S.affection));
-    $$(".h-val").forEach(e => e.textContent = S.affection + "/100");
-    $$(".h-fill").forEach(e => e.style.width = S.affection + "%");
-    $$(".h-msgs").forEach(e => e.textContent = left());
-    $$(".msgs").forEach(e => e.classList.toggle("low", left() <= 10));
+    const a = S.affection;
+    $$(".ring.hud-ring").forEach(e => { const fg = e.querySelector(".rg-fg"); if (fg) { fg.style.strokeDashoffset = CIRC * (1 - a / 100); e.querySelector("b").textContent = a; } else e.innerHTML = ringSvg(a) + `<b>${a}</b>`; });
+    $$(".pill-meter.hud-ring").forEach(e => e.innerHTML = `<span class="rg">${ringSvg(a)}${a}</span>${level(a)}`);
+    const l = left(); $("#chat-input").placeholder = l <= 10 ? `Message · ${l} left today` : "Message";
   }
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  function bubble(container, who, text) { const d = document.createElement("div"); d.className = "msg " + who; d.innerHTML = esc(text); container.appendChild(d); container.scrollTop = container.scrollHeight; return d; }
-
-  // visual-novel line with typewriter
-  let twTimer = null;
-  function speak(text) {
-    const el = $("#line"); clearInterval(twTimer); el.classList.remove("typing"); el.textContent = "";
-    let i = 0; const t = String(text);
-    twTimer = setInterval(() => { el.textContent = t.slice(0, ++i); if (i >= t.length) clearInterval(twTimer); }, 22);
-    el.onclick = () => { clearInterval(twTimer); el.textContent = t; };
+  function bubble(container, who, text) { const d = document.createElement("div"); d.className = "msg " + who; d.innerHTML = esc(text); container.appendChild(d); requestAnimationFrame(() => container.scrollTo({ top: container.scrollHeight, behavior: "smooth" })); return d; }
+  function typing(container, on) {
+    container.querySelectorAll(".typing").forEach(t => t.remove());
+    if (on) { const d = bubble(container, "her typing", ""); d.innerHTML = "<i></i><i></i><i></i>"; }
   }
-  function thinking() { clearInterval(twTimer); const el = $("#line"); el.classList.add("typing"); el.innerHTML = "<span></span><span></span><span></span>"; }
+  const EMO_LABEL = { neutral: "online", smile: "smiling", laugh: "laughing", shy: "blushing", annoyed: "unimpressed", sad: "quiet", flirty: "flirting", surprised: "surprised" };
   let curEmo = "neutral", front = true;
   function emotion(e) {
     if (!e || e === curEmo) return;
-    curEmo = e; $("#emotion-tag").textContent = e;
+    curEmo = e; $("#emotion-tag").textContent = EMO_LABEL[e] || "online";
     const a = $("#elena-img"), b = $("#elena-img-b"), [on, off] = front ? [b, a] : [a, b];
-    on.onload = () => { on.style.opacity = 1; off.style.opacity = 0; on.classList.add("pop"); setTimeout(() => on.classList.remove("pop"), 450); };
+    on.onload = () => { on.style.opacity = 1; off.style.opacity = 0; };
     on.src = img("elena_" + e); front = !front;
     $("#grade").style.setProperty("--m", `url(${img("elena_" + e)})`);
   }
   function delta(d) {
     if (!d) return; const el = $("#delta"); el.className = "delta " + (d > 0 ? "up" : "down");
-    el.textContent = (d > 0 ? "+" : "−") + Math.abs(d); void el.offsetWidth; el.classList.add("show");
-    $$(".bar").forEach(b => { b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); });
+    el.textContent = (d > 0 ? "♥ +" : "−") + Math.abs(d); void el.offsetWidth; el.classList.add("show");
+    $$(".ring").forEach(b => { b.classList.remove("beat"); void b.offsetWidth; b.classList.add("beat"); });
+    if (d > 0) haptic(12);
   }
   function applyAffection(d) {
     const before = level(S.affection);
     S.affection = clamp(S.affection + d); S.peak = Math.max(S.peak, S.affection);
     const after = level(S.affection);
-    if (after !== before) toast(LEVELS.findIndex(l => l[1] === after) > LEVELS.findIndex(l => l[1] === before) ? `Relationship up: ${after} ♥` : `Relationship down: ${after}`);
+    if (after !== before) toast(LEVELS.findIndex(l => l[1] === after) > LEVELS.findIndex(l => l[1] === before) ? `You're now ${after.toLowerCase()} ♥` : `Cooling off · ${after.toLowerCase()}`);
     hud(); save();
   }
 
@@ -98,7 +111,7 @@
     if (mode === "text") return { reply: FB.text(S.day, S.affection) };
     return FB.reply(extra.message, stateForApi());
   }
-  function setLive(v) { live = v; const b = $("#mode-badge"); b.textContent = v ? "● Live AI" : "Demo mode (scripted)"; b.classList.toggle("live", v); }
+  function setLive(v) { live = v; const b = $("#mode-badge"); b.textContent = v ? "Live AI" : "Demo mode"; b.classList.toggle("live", v); }
   async function detect() {
     if (C.FORCE_DEMO) return setLive(false);
     api = C.API_URL || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/api/chat" : null);
@@ -123,53 +136,74 @@
   }
   function enterDate(loc, resumed) {
     S.phase = "date"; S.location = loc; save();
-    $("#date-bg").style.setProperty("--img", `url(${img(LOCS[loc].bg)})`);
+    $("#date-bg").style.setProperty("--img", `url(${img(LOCS[loc].bg + "_p")})`);
+    document.body.style.setProperty("--bd", `url(${img(LOCS[loc].bg)})`);
     $("#s-date").dataset.scene = loc;
-    $("#log").innerHTML = ""; curEmo = ""; emotion("neutral");
-    bubble($("#log"), "sys", `Night ${S.day} · ${LOCS[loc].name}` + (live ? "" : " · demo"));
-    $("#you").textContent = ""; $("#history").hidden = true;
-    if (resumed && S.history.length) { S.history.forEach(m => bubble($("#log"), m.role === "user" ? "me" : "her", m.content)); speak([...S.history].reverse().find(m => m.role === "assistant").content); }
-    else { const o = FB.opener(S.day, loc, S.memories); S.history.push({ role: "assistant", content: o }); bubble($("#log"), "her", o); emotion("smile"); speak(o); save(); }
-    suggestions(); turnsUI(); $("#chat-input").disabled = false; $("#send").disabled = false;
-    show("s-date"); setTimeout(() => $("#chat-input").focus(), 300);
+    const log = $("#log"); log.innerHTML = ""; curEmo = ""; emotion("neutral");
+    bubble(log, "sys", `Night ${S.day} · ${LOCS[loc].name}` + (live ? "" : " · demo"));
+    if (resumed && S.history.length) { S.history.forEach(m => bubble(log, m.role === "user" ? "me" : "her", m.content)); }
+    else { const o = FB.opener(S.day, loc, S.memories); S.history.push({ role: "assistant", content: o }); emotion("smile"); save();
+      typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", o); }, 900); }
+    suggestions(); lockComposer(S.turns >= C.TURNS_PER_DATE);
+    show("s-date");
   }
+  function lockComposer(done) { $("#chat-form").hidden = done; $("#walk-home").hidden = !done; $("#chat-input").disabled = done; composerState(); }
+  function composerState() { $("#chat-form").classList.toggle("empty", !$("#chat-input").value.trim()); }
   function suggestions() {
     const box = $("#suggest"); box.innerHTML = "";
     if (S.turns > 1) return;
-    SUGGEST[S.location].forEach(t => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.onclick = () => send(t); box.appendChild(b); });
+    SUGGEST[S.location].forEach((t, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.animationDelay = (0.9 + i * 0.07) + "s"; b.onclick = () => { haptic(); send(t); }; box.appendChild(b); });
   }
-  const turnsUI = () => $("#turns").textContent = `${S.turns}/${C.TURNS_PER_DATE}`;
 
   async function send(text) {
     text = String(text || "").trim(); if (!text || busy) return;
-    if (S.turns >= C.TURNS_PER_DATE) return toast("The night is winding down — end the date.");
+    if (S.turns >= C.TURNS_PER_DATE) return toast("The night is winding down");
     if (left() <= 0) return paywall();
-    busy = true; $("#chat-input").value = ""; $("#suggest").innerHTML = "";
-    bubble($("#log"), "me", text); $("#you").textContent = text; thinking();
+    busy = true; $("#chat-input").value = ""; composerState(); $("#suggest").innerHTML = "";
+    const log = $("#log"); bubble(log, "me", text); haptic(6);
+    setTimeout(() => busy && typing(log, true), 350);
     const res = await brain("chat", { message: text });
-    spend(); speak(res.reply);
+    spend(); typing(log, false);
     S.history.push({ role: "user", content: text }, { role: "assistant", content: res.reply });
-    S.turns++; bubble($("#log"), "her", res.reply); emotion(res.emotion); delta(res.affection_delta); applyAffection(res.affection_delta || 0);
-    turnsUI(); busy = false; save();
+    S.turns++; bubble(log, "her", res.reply); emotion(res.emotion); delta(res.affection_delta); applyAffection(res.affection_delta || 0);
+    busy = false; save();
     if (S.turns >= C.TURNS_PER_DATE) {
       const bye = S.affection >= 50 ? "It's getting late… but I really don't want tonight to end." : "It's getting late. I should head home.";
-      setTimeout(() => { bubble($("#log"), "her", bye); $("#you").textContent = ""; speak(bye); S.history.push({ role: "assistant", content: bye }); save(); }, 700);
-      $("#chat-input").disabled = true; $("#send").disabled = true; $("#end-date").textContent = "Walk her home →";
+      setTimeout(() => { typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", bye); S.history.push({ role: "assistant", content: bye }); save(); lockComposer(true); }, 900); }, 600);
     }
   }
   function paywall() {
-    modal(`<img src="${img("elena_card")}" alt=""><h3>That's all for tonight</h3><p>You've used today's ${C.FREE_MESSAGES_PER_DAY} free messages. They refill tomorrow.</p>
-      <button class="btn primary" onclick="alert('Unlimited Pass — coming soon!')">Unlimited Pass — soon</button>
-      <a class="btn kofi-btn" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`);
+    modal(`<img class="s-img" src="${img("elena_card")}" alt=""><h3>That's all for tonight</h3><p>You've used today's ${C.FREE_MESSAGES_PER_DAY} free messages. They refill tomorrow — Elena will be waiting.</p>
+      <button class="btn primary" type="button" onclick="alert('Unlimited Pass — coming soon!')">Unlimited Pass · soon</button>
+      <a class="btn glass" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`);
+  }
+  function confirmEnd() {
+    if (busy) return;
+    if (S.turns >= C.TURNS_PER_DATE) return endDate();
+    modal(`<h3>End the date?</h3><p>${S.turns ? "Elena will remember tonight. You'll text afterwards." : "Leaving without a word won't go down well."}</p>
+      <button class="btn primary" type="button" id="sh-end">End the date</button><button class="btn glass" type="button" data-close>Keep talking</button>`);
+    $("#sh-end").onclick = () => { closeSheet(); endDate(); };
+  }
+  function statusSheet() {
+    const a = S.affection, snd = localStorage.getItem("afterglow.sound") === "1";
+    modal(`<div class="app-row"><img src="${img("elena_card")}" alt="" style="border-radius:50%;object-fit:cover;object-position:50% 18%"><div><b>Elena</b><small>${level(a)} · ${a} of 100</small></div></div>
+      <div class="rows"><div class="bar-l" style="margin-top:14px"><i style="width:${a}%"></i></div>
+        <div class="row">Night<span>${S.day} of 3</span></div>
+        ${S.phase === "date" ? `<div class="row">Messages this date<span>${S.turns} of ${C.TURNS_PER_DATE}</span></div>` : ""}
+        <div class="row">Free messages today<span>${left()} left</span></div>
+        <div class="row">AI<span>${live ? "Live" : "Demo mode"}</span></div>
+        <div class="row">Sound<button class="switch ${snd ? "on" : ""}" id="sh-snd" type="button" aria-label="Sound"></button></div></div>
+      <button class="btn glass" type="button" data-close>Done</button>`);
+    $("#sh-snd").onclick = e => { const on = !e.currentTarget.classList.contains("on"); e.currentTarget.classList.toggle("on", on); setSound(on); haptic(); if (on) toast("Voice & music arrive in the next update"); };
   }
   async function endDate() {
     if (busy) return;
-    if (S.turns === 0) { applyAffection(-5); toast("You left without saying a word… (−5)"); }
-    busy = true; $("#end-date").textContent = "…";
+    if (S.turns === 0) { applyAffection(-5); toast("You left without a word · −5"); }
+    busy = true; $("#walk-home").textContent = "…";
     const { summary } = S.turns ? await brain("summary") : { summary: `We met at ${LOCS[S.location].name}, but they left almost immediately.` };
     S.memories.push({ day: S.day, location: S.location, summary });
     if (!S.visited.includes(S.location)) S.visited.push(S.location);
-    busy = false; $("#end-date").textContent = "End the date →";
+    busy = false; $("#walk-home").textContent = "Walk her home";
     if (S.day >= 3) return ending();
     enterPhone();
   }
@@ -188,36 +222,36 @@
     renderMem();
     const dayMsgs = S.phoneLog.filter(m => m.day === S.day);
     if (resumed && dayMsgs.length) return replies(dayMsgs.length > 1);
-    $("#ph-status").textContent = "typing…";
+    $("#ph-status").textContent = "typing…"; typing(box, true);
     const { reply } = await brain("text");
-    $("#ph-status").textContent = "online";
+    $("#ph-status").textContent = "online"; typing(box, false);
     S.phoneLog.push({ day: S.day, t: reply }); bubble(box, "her", reply); save(); replies(false);
   }
   function replies(done) {
     const box = $("#ph-replies"); box.innerHTML = "";
     if (done) return;
     PH_REPLIES.forEach(o => { const b = document.createElement("button"); b.textContent = o.t; b.onclick = () => {
-      box.innerHTML = ""; bubble($("#ph-chat"), "me", o.t); S.phoneLog.push({ day: S.day, t: o.t, me: 1 });
-      $("#ph-status").textContent = "typing…";
-      setTimeout(() => { const r = o.r[Math.floor(Math.random() * o.r.length)]; bubble($("#ph-chat"), "her", r); S.phoneLog.push({ day: S.day, t: r }); $("#ph-status").textContent = "online"; applyAffection(o.d); toast(o.d > 0 ? `♥ +${o.d}` : `− ${-o.d}`); save(); }, 1100);
+      haptic(); box.innerHTML = ""; bubble($("#ph-chat"), "me", o.t); S.phoneLog.push({ day: S.day, t: o.t, me: 1 });
+      $("#ph-status").textContent = "typing…"; setTimeout(() => typing($("#ph-chat"), true), 300);
+      setTimeout(() => { typing($("#ph-chat"), false); const r = o.r[Math.floor(Math.random() * o.r.length)]; bubble($("#ph-chat"), "her", r); S.phoneLog.push({ day: S.day, t: r }); $("#ph-status").textContent = "online"; applyAffection(o.d); toast(o.d > 0 ? `♥ +${o.d}` : `−${-o.d}`); save(); }, 1400);
     }; box.appendChild(b); });
   }
   function renderMem() {
     const m = $("#ph-mem"); m.innerHTML = S.memories.length ? "" : '<div class="msg sys">No memories yet.</div>';
-    S.memories.forEach(x => { const d = document.createElement("div"); d.className = "mem"; d.innerHTML = `<b>DAY ${x.day} · ${esc(LOCS[x.location].name.toUpperCase())}</b>${esc(x.summary)}`; m.appendChild(d); });
+    S.memories.forEach(x => { const d = document.createElement("div"); d.className = "mem"; d.innerHTML = `<b>Night ${x.day} · ${esc(LOCS[x.location].name)}</b>${esc(x.summary)}`; m.appendChild(d); });
   }
-  $$(".ph-tabs button").forEach(b => b.onclick = () => { $$(".ph-tabs button").forEach(x => x.classList.toggle("on", x === b)); $("#ph-chat").hidden = b.dataset.tab !== "chat"; $("#ph-mem").hidden = b.dataset.tab !== "mem"; $("#ph-replies").hidden = b.dataset.tab !== "chat"; });
-  $("#btn-sleep").onclick = () => { S.day++; enterMap(); toast(`Day ${S.day} — a new night in Port Lumen`); };
+  $$(".seg button").forEach(b => b.onclick = () => { haptic(); $$(".seg button").forEach(x => x.classList.toggle("on", x === b)); $("#ph-chat").hidden = b.dataset.tab !== "chat"; $("#ph-mem").hidden = b.dataset.tab !== "mem"; $("#ph-replies").hidden = b.dataset.tab !== "chat"; });
+  $("#btn-sleep").onclick = () => { haptic(); S.day++; enterMap(); toast(`Night ${S.day} · a new evening in Port Lumen`); };
 
   // ---------- ending ----------
   function ending() {
     S.phase = "end"; save();
     const a = S.affection;
     const E = a >= 75 ? { k: "True ending", t: "Afterglow", i: "elena_shy", bg: "bg_hotel", x: `On the last night Elena takes your hand before you can take hers. "Okay. I'm officially not picky anymore." Port Lumen has never looked this bright.` }
-      : a >= 45 ? { k: "Good ending", t: "Slow Burn", i: "elena_smile", bg: "bg_beach", x: `Elena hugs you goodbye a little longer than a friend would. "Text me. Not 'k'. A real message." Something started here — it just isn't finished yet.` }
-      : { k: "Bad ending", t: "Just Passing Through", i: "elena_sad", bg: "bg_market", x: `Elena smiles politely and disappears into the neon crowd. Some sparks don't catch. Maybe next time, ask her what she's really about.` };
+      : a >= 45 ? { k: "Good ending", t: "Slow burn", i: "elena_smile", bg: "bg_beach", x: `Elena hugs you goodbye a little longer than a friend would. "Text me. Not 'k'. A real message." Something started here — it just isn't finished yet.` }
+      : { k: "Bad ending", t: "Just passing through", i: "elena_sad", bg: "bg_market", x: `Elena smiles politely and disappears into the neon crowd. Some sparks don't catch. Maybe next time, ask her what she's really about.` };
     $("#end-kicker").textContent = E.k; $("#end-title").textContent = E.t; $("#end-text").textContent = E.x;
-    $("#end-img").src = img(E.i); $("#end-bg").style.setProperty("--img", `url(${img(E.bg)})`);
+    $("#end-img").src = img(E.i); $("#end-bg").style.setProperty("--img", `url(${img(E.bg + "_p")})`); document.body.style.setProperty("--bd", `url(${img(E.bg)})`);
     $("#end-stats").innerHTML = `<div><b>${a}</b>Affection</div><div><b>${level(a)}</b>Status</div><div><b>${Math.max(S.memories.length, S.day || 1)}</b>Nights</div>`;
     const txt = `I got the "${E.t}" ending with Elena in Afterglow — an AI dating sim where she actually remembers what you say. Can you do better?`;
     $("#btn-share").href = "https://x.com/intent/post?text=" + encodeURIComponent(txt) + "&url=" + encodeURIComponent(location.href.split("#")[0]);
@@ -225,34 +259,57 @@
   }
 
   // ---------- wiring ----------
-  $("#btn-new").onclick = startNew;
-  $("#btn-continue").onclick = resume;
-  $("#btn-restart").onclick = () => { localStorage.removeItem(SAVE_KEY); S = null; $("#btn-continue").hidden = true; show("s-title"); };
-  $$("[data-back]").forEach(b => b.onclick = () => show(b.dataset.back));
-  $("#card-elena").onclick = enterMap;
-  $("#card-maya").onclick = () => modal(`<img src="${img("maya")}" alt=""><h3>Maya</h3><p>A sharp, elegant founder with her own story, three new endings and a private penthouse office.</p>
-    <button class="btn primary" onclick="alert('Premium unlock — coming soon!')">Unlock for ${C.PREMIUM_PRICE} — soon</button><a class="btn kofi-btn" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`);
-  $("#card-sasha").onclick = () => toast("Sasha arrives soon — follow @worldmarketcup");
-  $$(".card").forEach(c => c.onkeydown = e => { if (e.key === "Enter") c.click(); });
+  $("#btn-new").onclick = () => { haptic(); startNew(); };
+  $("#player-name").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); startNew(); } };
+  $("#btn-continue").onclick = () => { haptic(); resume(); };
+  $("#btn-restart").onclick = () => { haptic(); localStorage.removeItem(SAVE_KEY); S = null; $("#btn-continue").hidden = true; show("s-title"); };
+  $$("[data-back]").forEach(b => b.onclick = () => { haptic(); show(b.dataset.back); });
+  const PICK = {
+    elena: () => { haptic(); enterMap(); },
+    maya: () => modal(`<img class="s-img" src="${img("maya")}" alt=""><h3>Maya</h3><p>A sharp, elegant founder with her own story, three new endings and a private penthouse office.</p>
+      <button class="btn primary" type="button" onclick="alert('Premium unlock — coming soon!')">Unlock for ${C.PREMIUM_PRICE} · soon</button><a class="btn glass" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`),
+    sasha: () => toast("Sasha arrives soon · follow @worldmarketcup"),
+  };
+  $$(".pcard").forEach(c => { const k = c.id.replace("card-", ""); c.onclick = () => PICK[k](); c.onkeydown = e => { if (e.key === "Enter") PICK[k](); }; });
+  const deck = $("#deck"); deck.addEventListener("scroll", () => { const i = Math.round(deck.scrollLeft / deck.clientWidth); $$("#deck-dots i").forEach((d, j) => d.classList.toggle("on", i === j)); }, { passive: true });
   // sound toggle (placeholder until voice ships)
-  const setSound = on => { localStorage.setItem("afterglow.sound", on ? "1" : "0"); $$(".sound").forEach(b => { b.textContent = b.closest(".hud") ? "♪" : `Sound · ${on ? "on" : "off"}`; b.classList.toggle("off", !on); }); };
-  $$(".sound").forEach(b => b.onclick = () => { const on = localStorage.getItem("afterglow.sound") !== "1"; setSound(on); toast(on ? "Voice & music arrive in the next update" : "Sound off"); });
+  function setSound(on) { localStorage.setItem("afterglow.sound", on ? "1" : "0"); $$(".icon-btn.sound").forEach(b => { b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Sound on" : "Sound off"); }); }
+  $$(".icon-btn.sound").forEach(b => b.onclick = () => { haptic(); const on = localStorage.getItem("afterglow.sound") !== "1"; setSound(on); toast(on ? "Voice & music arrive in the next update" : "Sound off"); });
   setSound(localStorage.getItem("afterglow.sound") === "1");
-  $$(".loc").forEach(b => b.onclick = () => enterDate(b.dataset.loc));
+  $$(".loc").forEach(b => b.onclick = () => { haptic(); enterDate(b.dataset.loc); });
   $("#chat-form").onsubmit = e => { e.preventDefault(); send($("#chat-input").value); };
-  $("#end-date").onclick = endDate;
-  $("#history-btn").onclick = () => { const h = $("#history"); h.hidden = !h.hidden; if (!h.hidden) $("#log").scrollTop = 1e9; };
-  $("#history-x").onclick = () => $("#history").hidden = true;
-  window.addEventListener("keydown", e => { if (e.key === "Escape") $("#modal").hidden = true; });
+  $("#chat-input").oninput = composerState;
+  $("#end-date").onclick = () => { haptic(); confirmEnd(); };
+  $("#walk-home").onclick = () => { haptic(); endDate(); };
+  $("#ring-btn").onclick = () => { haptic(); statusSheet(); };
+  window.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+  // ---------- PWA: service worker + install hint ----------
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)))
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW", e)));
+  let deferredInstall = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; });
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  function installHint(force) {
+    if (!force && (standalone() || localStorage.getItem("afterglow.hint") || !matchMedia("(pointer:coarse)").matches || /[?&]nohint/.test(location.search))) return;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (!ios && !deferredInstall && !force) return;
+    localStorage.setItem("afterglow.hint", "1");
+    const how = ios ? `<p>Tap <span class="ios-share"></span> Share, then <b>Add to Home Screen</b>. Afterglow opens full-screen, like an app.</p><button class="btn primary" type="button" data-close>Got it</button>`
+      : `<p>Install Afterglow on your phone. It opens full-screen and loads instantly.</p><button class="btn primary" type="button" id="sh-install">Install app</button><button class="btn glass" type="button" data-close>Not now</button>`;
+    modal(`<div class="app-row"><img src="assets/img/icon-192.png" alt=""><div><b>Afterglow</b><small>Add to Home Screen</small></div></div>${how}`);
+    const ib = $("#sh-install"); if (ib) ib.onclick = async () => { closeSheet(); if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; } };
+  }
 
   const prev = load(); if (prev && prev.phase) { $("#btn-continue").hidden = false; $("#player-name").value = prev.playerName || ""; }
   detect();
   // loader: preload key art, then fade in
   (function preload() {
-    const list = ["title", "bg_hotel", "elena_neutral", "elena_smile", "elena_card", "maya", "sasha"].map(img);
+    const list = ["title_p", "p_elena", "bg_hotel_p", "elena_neutral", "elena_smile", "elena_card"].map(img);
     let n = 0; const done = () => { $("#ld-fill").style.width = (++n / list.length * 100) + "%"; if (n === list.length) setTimeout(() => $("#loader").classList.add("done"), 350); };
     list.forEach(u => { const i = new Image(); i.onload = i.onerror = done; i.src = u; });
     setTimeout(() => $("#loader").classList.add("done"), 6000);
+    setTimeout(() => installHint(), 4500);
   })();
-  window.__afterglow = { get state() { return S; }, ending, setLive }; // debug hook
+  window.__afterglow = { get state() { return S; }, ending, setLive, paywall, installHint, statusSheet, closeSheet }; // debug hook
 })();

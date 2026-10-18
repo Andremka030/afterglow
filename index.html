@@ -2,149 +2,140 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0a0c">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0e0c10">
 <title>Afterglow — an AI dating sim</title>
-<meta name="description" content="Three nights in Port Lumen. One conversation that never plays the same twice. A photorealistic AI dating sim in your browser.">
+<meta name="description" content="Three nights in Port Lumen. Chat with Elena in your own words — she remembers, she reacts. An AI dating sim that lives on your phone.">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="assets/img/icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Afterglow">
 <meta property="og:title" content="Afterglow — an AI dating sim">
-<meta property="og:description" content="Talk to Elena in your own words. She remembers. She reacts. 3 nights, 3 endings.">
+<meta property="og:description" content="Chat with Elena in your own words. She remembers. She reacts. 3 nights, 3 endings.">
 <meta property="og:image" content="https://andremka030.github.io/afterglow/assets/img/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="assets/fonts/Inter-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/Cormorant-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="app">
+<div class="backdrop" aria-hidden="true"></div>
+<main id="app">
 
-  <!-- LOADER -->
-  <div id="loader"><div class="ld-logo">Afterglow</div><div class="ld-bar"><i id="ld-fill"></i></div></div>
+  <div id="loader"><div class="ld-mark"></div><div class="ld-bar"><i id="ld-fill"></i></div></div>
 
-  <!-- TITLE -->
+  <!-- WELCOME -->
   <section id="s-title" class="screen active">
-    <div class="bg kb" style="--img:url(assets/img/title.webp)"></div>
-    <div class="shade-left"></div>
-    <div class="corner"><button class="sound" type="button" aria-label="Sound">Sound · off</button></div>
-    <div class="title-wrap">
-      <div class="kicker">An AI dating sim</div>
-      <h1 class="logo">Afterglow</h1>
-      <p class="tag">Three nights in Port Lumen.<br>Say anything — she remembers.</p>
-      <label class="name-field"><span>Your name</span><input id="player-name" maxlength="20" placeholder="Alex" autocomplete="off"></label>
-      <div class="btn-row">
-        <button class="btn primary" id="btn-new">New game</button>
-        <button class="btn ghost" id="btn-continue" hidden>Continue</button>
-      </div>
-      <div class="meta-row"><span id="mode-badge" class="badge">checking…</span><span class="sep">·</span><a class="kofi" id="kofi-title" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>
+    <div class="art kb" style="--img:url(assets/img/title_p.webp)"></div>
+    <div class="fade-b"></div>
+    <header class="bar"><span class="wordmark">Afterglow</span><button class="icon-btn sound" type="button" aria-label="Sound off"></button></header>
+    <div class="sheet-bottom welcome">
+      <h1>Three nights.<br>One conversation<br>she'll remember.</h1>
+      <p class="sub">An AI dating sim. Say anything — Elena reacts, remembers and decides.</p>
+      <input id="player-name" class="field" maxlength="20" placeholder="Your name" autocomplete="given-name" enterkeyhint="go">
+      <button class="btn primary" id="btn-new">Start</button>
+      <button class="btn glass" id="btn-continue" hidden>Continue</button>
+      <div class="meta"><span id="mode-badge" class="status">Connecting…</span><a class="kofi" id="kofi-title" target="_blank" rel="noopener">☕ Buy me a coffee</a></div>
     </div>
-    <div class="foot">18+ fictional characters · PG-13 · No explicit content</div>
   </section>
 
-  <!-- CHARACTER SELECT -->
+  <!-- WHO (swipe cards) -->
   <section id="s-select" class="screen">
-    <div class="bg dim" style="--img:url(assets/img/bg_hotel.webp)"></div>
-    <header class="top"><button class="back" data-back="s-title" type="button">← Back</button><div class="step">Who are you meeting tonight?</div><span></span></header>
-    <div class="cards">
-      <article class="card pick" id="card-elena" tabindex="0">
-        <img src="assets/img/elena_card.webp" alt="Elena">
-        <div class="card-info"><div class="name">Elena</div><div class="role">28 · Street photographer</div><div class="tagline">Witty, guarded, hates clichés.</div><div class="pill">Available</div></div>
+    <div class="deck" id="deck">
+      <article class="pcard" id="card-elena" tabindex="0" style="--img:url(assets/img/p_elena.webp)">
+        <div class="pc-info"><h2>Elena <span>28</span></h2><p>Street photographer. Witty, guarded, hates clichés.</p>
+          <div class="chips"><span>Photography</span><span>Night markets</span><span>Sarcasm</span></div>
+          <button class="btn primary" type="button" data-go="elena">Meet Elena</button></div>
       </article>
-      <article class="card locked" id="card-maya" tabindex="0">
-        <img src="assets/img/maya.webp" alt="Maya">
-        <div class="card-info"><div class="name">Maya</div><div class="role">30 · Startup founder</div><div class="tagline">Sharp, elegant, always busy.</div><div class="pill">Premium</div></div>
+      <article class="pcard" id="card-maya" tabindex="0" style="--img:url(assets/img/p_maya.webp)">
+        <div class="pc-info"><h2>Maya <span>30</span></h2><p>Startup founder. Sharp, elegant, always busy.</p>
+          <div class="chips"><span>Premium</span></div>
+          <button class="btn glass" type="button" data-go="maya">Unlock</button></div>
       </article>
-      <article class="card soon" id="card-sasha" tabindex="0">
-        <img src="assets/img/sasha.webp" alt="Sasha">
-        <div class="card-info"><div class="name">Sasha</div><div class="role">25 · Street racer</div><div class="tagline">Wild, loyal, fast.</div><div class="pill">Coming soon</div></div>
+      <article class="pcard" id="card-sasha" tabindex="0" style="--img:url(assets/img/p_sasha.webp)">
+        <div class="pc-info"><h2>Sasha <span>25</span></h2><p>Street racer. Wild, loyal, fast.</p>
+          <div class="chips"><span>Coming soon</span></div>
+          <button class="btn glass" type="button" data-go="sasha">Notify me</button></div>
       </article>
     </div>
+    <header class="bar over"><button class="icon-btn" data-back="s-title" type="button" aria-label="Back">‹</button><div class="dots" id="deck-dots"><i class="on"></i><i></i><i></i></div><span class="icon-sp"></span></header>
   </section>
 
-  <!-- LOCATION SELECT -->
+  <!-- WHERE (snap carousel) -->
   <section id="s-map" class="screen">
-    <div class="bg dim" id="map-bg" style="--img:url(assets/img/bg_hotel.webp)"></div>
-    <header class="top hud"></header>
-    <div class="map-wrap">
-      <div class="map-head"><div class="kicker" id="map-day">Night 1 of 3</div><h2>Where will you take her?</h2></div>
-      <div class="locs">
-        <button class="loc" data-loc="hotel"><img src="assets/img/bg_hotel.webp" alt=""><div><b>The Lumen Hotel</b><span>Marble, low light, quiet jazz</span></div><em class="visited">Visited</em></button>
-        <button class="loc" data-loc="rooftop"><img src="assets/img/bg_rooftop.webp" alt=""><div><b>Skyline Rooftop</b><span>Cocktails above the city</span></div><em class="visited">Visited</em></button>
-        <button class="loc" data-loc="beach"><img src="assets/img/bg_beach.webp" alt=""><div><b>Coral Bay</b><span>Dusk, sand, white cabanas</span></div><em class="visited">Visited</em></button>
-        <button class="loc" data-loc="market"><img src="assets/img/bg_market.webp" alt=""><div><b>Lantern Market</b><span>Street food in the rain</span></div><em class="visited">Visited</em></button>
-      </div>
+    <div class="art blur" id="map-bg" style="--img:url(assets/img/bg_hotel_p.webp)"></div>
+    <header class="bar"><span class="wordmark">Afterglow</span><span class="pill-meter hud-ring"></span></header>
+    <div class="map-head"><p class="eyebrow" id="map-day">Night 1 of 3</p><h2>Where to tonight?</h2></div>
+    <div class="carousel" id="locs">
+      <button class="loc" data-loc="hotel" style="--img:url(assets/img/bg_hotel_p.webp)"><span class="tag">Visited</span><b>The Lumen Hotel</b><small>Marble, low light, quiet jazz</small></button>
+      <button class="loc" data-loc="rooftop" style="--img:url(assets/img/bg_rooftop_p.webp)"><span class="tag">Visited</span><b>Skyline Rooftop</b><small>Cocktails above the city</small></button>
+      <button class="loc" data-loc="beach" style="--img:url(assets/img/bg_beach_p.webp)"><span class="tag">Visited</span><b>Coral Bay</b><small>Dusk, sand, white cabanas</small></button>
+      <button class="loc" data-loc="market" style="--img:url(assets/img/bg_market_p.webp)"><span class="tag">Visited</span><b>Lantern Market</b><small>Street food in the rain</small></button>
     </div>
+    <p class="hint">Swipe to choose · tap to go</p>
   </section>
 
-  <!-- DATE (visual-novel layout) -->
+  <!-- DATE (chat over full-bleed portrait) -->
   <section id="s-date" class="screen">
-    <div class="bg" id="date-bg"></div>
+    <div class="art" id="date-bg"></div>
     <div class="heroine"><div class="breath"><img id="elena-img" src="assets/img/elena_neutral.webp" alt="Elena"><img id="elena-img-b" class="fadeimg" alt=""><div class="grade" id="grade"></div></div></div>
-    <div class="vignette"></div>
-    <header class="top hud"></header>
-    <aside class="history" id="history" hidden>
-      <div class="chat-head"><span>Conversation</span><button class="close-x" id="history-x" type="button" aria-label="Close">✕</button></div>
-      <div class="log" id="log"></div>
-    </aside>
-    <div class="vn">
-      <div class="vn-name"><b>Elena</b><span id="emotion-tag" class="emo">neutral</span><span class="delta" id="delta"></span><span class="turns" id="turns"></span></div>
-      <div class="you" id="you"></div>
-      <div class="line" id="line"></div>
+    <div class="fade-t"></div><div class="fade-b strong"></div>
+    <header class="bar chat-bar">
+      <button class="icon-btn" id="end-date" type="button" aria-label="End the date">‹</button>
+      <div class="who"><img src="assets/img/elena_card.webp" alt=""><div><b>Elena</b><small><i class="online"></i><span id="emotion-tag">online</span></small></div></div>
+      <button class="ring hud-ring" id="ring-btn" type="button" aria-label="Relationship"></button>
+    </header>
+    <span class="delta" id="delta"></span>
+    <div class="thread" id="log"></div>
+    <div class="dock">
       <div class="suggest" id="suggest"></div>
-      <form class="input" id="chat-form" autocomplete="off">
-        <button class="ghost-icon" id="history-btn" type="button" title="Conversation history" aria-label="History">≡</button>
-        <input id="chat-input" maxlength="400" placeholder="Say something…">
-        <button class="send" id="send" aria-label="Send">→</button>
+      <form class="composer" id="chat-form" autocomplete="off">
+        <input id="chat-input" maxlength="400" placeholder="Message" enterkeyhint="send">
+        <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
-      <button class="link" id="end-date" type="button">End the date</button>
+      <button class="btn primary" id="walk-home" type="button" hidden>Walk her home</button>
     </div>
   </section>
 
-  <!-- PHONE -->
+  <!-- MESSAGES (between nights) -->
   <section id="s-phone" class="screen">
-    <div class="bg dim-soft" style="--img:url(assets/img/bg_apartment.webp)"></div>
-    <header class="top hud"></header>
-    <div class="phone">
-      <div class="notch"></div>
-      <div class="ph-head"><img src="assets/img/elena_card.webp" alt=""><div><b>Elena</b><small id="ph-status">online</small></div></div>
-      <div class="ph-tabs"><button class="on" data-tab="chat">Messages</button><button data-tab="mem">Memories</button></div>
-      <div class="ph-body" id="ph-chat"></div>
-      <div class="ph-body" id="ph-mem" hidden></div>
-      <div class="ph-replies" id="ph-replies"></div>
-      <button class="btn primary wide" id="btn-sleep">Sleep — next night</button>
+    <div class="art blur" style="--img:url(assets/img/bg_apartment_p.webp)"></div>
+    <header class="bar chat-bar solid">
+      <span class="icon-sp"></span>
+      <div class="who"><img src="assets/img/elena_card.webp" alt=""><div><b>Elena</b><small><i class="online"></i><span id="ph-status">online</span></small></div></div>
+      <span class="pill-meter hud-ring"></span>
+    </header>
+    <div class="seg"><button class="on" data-tab="chat">Messages</button><button data-tab="mem">Memories</button></div>
+    <div class="thread static" id="ph-chat"></div>
+    <div class="thread static mems" id="ph-mem" hidden></div>
+    <div class="dock">
+      <div class="replies" id="ph-replies"></div>
+      <button class="btn primary" id="btn-sleep">Sleep · next night</button>
     </div>
   </section>
 
   <!-- ENDING -->
   <section id="s-end" class="screen">
-    <div class="bg kb" id="end-bg"></div>
-    <div class="end-shade"></div>
-    <div class="end-heroine"><img id="end-img" alt=""></div>
-    <div class="end-body">
-      <div class="kicker" id="end-kicker">Ending</div>
+    <div class="art kb" id="end-bg"></div>
+    <div class="heroine end"><img id="end-img" alt=""></div>
+    <div class="fade-b strong"></div>
+    <div class="sheet-bottom end-card">
+      <span class="chip" id="end-kicker">Ending</span>
       <h2 id="end-title"></h2>
       <p id="end-text"></p>
-      <div class="end-stats" id="end-stats"></div>
-      <div class="btn-row">
-        <a class="btn primary" id="btn-share" target="_blank" rel="noopener">Share on X</a>
-        <button class="btn ghost" id="btn-restart">Play again</button>
-      </div>
-      <p class="tease"><a class="kofi" id="kofi-end" target="_blank" rel="noopener">☕ Buy me a coffee</a><span class="sep">·</span>Maya &amp; Sasha are next — follow <a href="https://x.com/worldmarketcup" target="_blank" rel="noopener">@worldmarketcup</a></p>
+      <div class="stats" id="end-stats"></div>
+      <a class="btn primary" id="btn-share" target="_blank" rel="noopener">Share on X</a>
+      <button class="btn glass" id="btn-restart">Play again</button>
+      <div class="meta"><a class="kofi" id="kofi-end" target="_blank" rel="noopener">☕ Buy me a coffee</a><a href="https://x.com/worldmarketcup" target="_blank" rel="noopener">@worldmarketcup</a></div>
     </div>
   </section>
 
-  <!-- MODAL -->
-  <div class="modal" id="modal" hidden><div class="modal-box"><button class="close-x close" id="modal-x" aria-label="Close">✕</button><div id="modal-body"></div></div></div>
+  <!-- BOTTOM SHEET + TOAST -->
+  <div class="sheet" id="modal" hidden><div class="sheet-box"><i class="grabber"></i><div id="modal-body"></div></div></div>
   <div class="toast" id="toast"></div>
-</div>
-
-<template id="hud-tpl">
-  <div class="brand">Afterglow</div>
-  <div class="hud-day">Night <span class="h-day">1</span> / 3</div>
-  <div class="meter"><div class="meter-top"><span class="h-level">Strangers</span><span class="h-val">0</span></div><div class="bar"><i class="h-fill"></i></div></div>
-  <div class="msgs" title="Free AI messages left today"><span class="h-msgs">40</span> left</div>
-  <button class="sound" type="button" aria-label="Sound">♪</button>
-</template>
+</main>
 
 <script>document.addEventListener("error",e=>{if(e.target.tagName==="IMG")e.target.style.visibility="hidden"},true);document.addEventListener("load",e=>{if(e.target.tagName==="IMG")e.target.style.visibility=""},true);</script>
 <script src="js/config.js"></script>
