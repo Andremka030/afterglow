@@ -5,7 +5,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { handle, tts } from "../api/core.mjs";
+import { handle, tts, stt } from "../api/core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.PORT) || 8080;
@@ -25,6 +25,13 @@ http.createServer(async (req, res) => {
       const t = await tts(JSON.parse(raw || "{}"), env);
       if (t.error) { res.writeHead(t.status, { "Content-Type": "application/json" }); return res.end(JSON.stringify(t)); }
       res.writeHead(200, { "Content-Type": t.type }); return res.end(Buffer.from(t.audio));
+    } catch (e) { res.writeHead(502, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "upstream", detail: String(e.message).slice(0, 200) })); }
+  }
+  if (url.pathname === "/api/stt" && req.method === "POST") {
+    const chunks = []; let n = 0; for await (const c of req) { chunks.push(c); n += c.length; if (n > 1_600_000) break; }
+    try {
+      const out = await stt(Buffer.concat(chunks), req.headers["content-type"], env);
+      res.writeHead(out.status || 200, { "Content-Type": "application/json" }); return res.end(JSON.stringify(out));
     } catch (e) { res.writeHead(502, { "Content-Type": "application/json" }); return res.end(JSON.stringify({ error: "upstream", detail: String(e.message).slice(0, 200) })); }
   }
   if (url.pathname === "/api/chat" && req.method === "POST") {

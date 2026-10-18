@@ -1,6 +1,6 @@
 // Cloudflare Worker proxy for Afterglow. Holds LLM_API_KEY as a secret.
 // Deploy: see worker/README.md
-import { handle, tts } from "../api/core.mjs";
+import { handle, tts, stt } from "../api/core.mjs";
 
 const hits = new Map(); // best-effort per-isolate rate limit
 
@@ -11,6 +11,7 @@ function cors(origin, env) {
     "Access-Control-Allow-Origin": ok ? (allowed.includes("*") ? "*" : origin) : "null",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
   };
 }
@@ -38,6 +39,19 @@ export default {
     }
     if (!limited && env.RATE_LIMITER) { try { limited = !(await env.RATE_LIMITER.limit({ key: ip })).success; } catch {} }
     if (limited) return new Response('{"error":"rate_limited"}', { status: 429, headers: h });
+
+    // Voice message: raw audio body (MediaRecorder blob), English transcription
+    if (url.pathname.endsWith("/stt")) {
+      const max = Number(env.STT_MAX_BYTES) || 1_500_000;
+      if (Number(req.headers.get("Content-Length") || 0) > max) return new Response('{"error":"too_large"}', { status: 413, headers: h });
+      try {
+        const buf = await req.arrayBuffer();
+        const out = await stt(buf, req.headers.get("Content-Type"), env, fetch);
+        return new Response(JSON.stringify(out), { status: out.status || 200, headers: { ...h, "Cache-Control": "no-store" } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: "upstream", detail: String(e.message).slice(0, 200) }), { status: 502, headers: h });
+      }
+    }
 
     let body;
     try { body = await req.json(); } catch { return new Response('{"error":"bad_json"}', { status: 400, headers: h }); }

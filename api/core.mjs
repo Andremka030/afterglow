@@ -134,7 +134,7 @@ export async function handle(body, env, fetchImpl = fetch) {
 /** Text-to-speech via xAI /v1/tts. Returns { audio: ArrayBuffer, type } or { error, status }. */
 export async function tts(body, env, fetchImpl = fetch) {
   if (!env.LLM_API_KEY) return { error: "no_key", status: 503 };
-  const text = String(body?.text || "").slice(0, Number(env.TTS_MAX_CHARS) || 600).trim();
+  const text = String(body?.text || "").slice(0, Number(env.TTS_MAX_CHARS) || 400).trim();
   if (!text) return { error: "empty", status: 400 };
   const base = (env.TTS_BASE_URL || "https://api.x.ai/v1").replace(/\/$/, "");
   const r = await fetchImpl(base + "/tts", {
@@ -144,4 +144,30 @@ export async function tts(body, env, fetchImpl = fetch) {
   });
   if (!r.ok) throw new Error(`TTS HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return { audio: await r.arrayBuffer(), type: r.headers.get("Content-Type") || "audio/mpeg" };
+}
+
+/** Speech-to-text via xAI /v1/stt (batch). audio = ArrayBuffer of a webm/ogg/mp4/m4a/mp3/wav recording.
+ *  Returns { text, duration } or { error, status }. English only (language=en). */
+const STT_EXT = { "audio/webm": "webm", "audio/ogg": "ogg", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "video/webm": "webm", "video/mp4": "mp4" };
+export async function stt(audio, contentType, env, fetchImpl = fetch) {
+  if (!env.LLM_API_KEY) return { error: "no_key", status: 503 };
+  const type = String(contentType || "").split(";")[0].trim().toLowerCase();
+  const ext = STT_EXT[type];
+  if (!ext) return { error: "bad_type", status: 415 };
+  const max = Number(env.STT_MAX_BYTES) || 1_500_000;
+  if (!audio || audio.byteLength < 800) return { error: "too_short", status: 400 };
+  if (audio.byteLength > max) return { error: "too_large", status: 413 };
+  const base = (env.TTS_BASE_URL || "https://api.x.ai/v1").replace(/\/$/, "");
+  const fd = new FormData();
+  fd.append("model", env.STT_MODEL || "grok-voice-transcribe-2.0");
+  fd.append("language", "en");
+  fd.append("format", "true");
+  for (const k of ["Elena", "Port Lumen", "Lumen Hotel", "Coral Bay", "Lantern Market"]) fd.append("keyterm", k);
+  fd.append("file", new Blob([audio], { type }), "voice." + ext); // file must be the last field
+  const r = await fetchImpl(base + "/stt", { method: "POST", headers: { Authorization: `Bearer ${env.LLM_API_KEY}` }, body: fd });
+  if (!r.ok) throw new Error(`STT HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const j = await r.json();
+  const maxSec = Number(env.STT_MAX_SECONDS) || 30;
+  if (Number(j.duration) > maxSec + 5) return { error: "too_long", status: 413 };
+  return { text: String(j.text || "").trim().slice(0, Number(env.MAX_USER_CHARS) || DEFAULTS.MAX_USER_CHARS), duration: Number(j.duration) || 0 };
 }

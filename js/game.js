@@ -1,5 +1,5 @@
 (() => {
-  const C = window.AFTERGLOW_CONFIG, FB = window.ElenaFallback;
+  const C = window.AFTERGLOW_CONFIG, FB = window.ElenaFallback, V = window.AfterglowVoice;
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const SAVE_KEY = "afterglow.save.v1", QUOTA_KEY = "afterglow.quota";
   const LEVELS = [[0, "Strangers"], [20, "Acquaintances"], [40, "Friends"], [60, "Crush"], [80, "Couple"]];
@@ -32,6 +32,7 @@
   const BD = { "s-title": "title", "s-select": "title", "s-map": "bg_hotel", "s-phone": "bg_apartment" };
   function show(id) {
     $$(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+    if (id !== "s-date") { V.stop(); if (V.recording()) recCancel(); }
     const bd = id === "s-date" || id === "s-end" ? null : BD[id];
     if (bd) document.body.style.setProperty("--bd", `url(${img(bd)})`);
     hud();
@@ -62,7 +63,8 @@
     const l = left(); $("#chat-input").placeholder = l <= 10 ? `Message · ${l} left today` : "Message";
   }
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  function bubble(container, who, text) { const d = document.createElement("div"); d.className = "msg " + who; d.innerHTML = esc(text); container.appendChild(d); requestAnimationFrame(() => container.scrollTo({ top: container.scrollHeight, behavior: "smooth" })); return d; }
+  const MIC_SVG = '<svg class="vm" viewBox="0 0 24 24" width="13" height="13" aria-label="Voice message"><rect x="9" y="3" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  function bubble(container, who, text, voice) { const d = document.createElement("div"); d.className = "msg " + who + (voice ? " voice" : ""); d.innerHTML = (voice ? MIC_SVG : "") + esc(text); if (who === "her" && container.id === "log") d.dataset.say = text; container.appendChild(d); requestAnimationFrame(() => container.scrollTo({ top: container.scrollHeight, behavior: "smooth" })); return d; }
   function typing(container, on) {
     container.querySelectorAll(".typing").forEach(t => t.remove());
     if (on) { const d = bubble(container, "her typing", ""); d.innerHTML = "<i></i><i></i><i></i>"; }
@@ -111,7 +113,7 @@
     if (mode === "text") return { reply: FB.text(S.day, S.affection) };
     return FB.reply(extra.message, stateForApi());
   }
-  function setLive(v) { live = v; const b = $("#mode-badge"); b.textContent = v ? "Live AI" : "Demo mode"; b.classList.toggle("live", v); }
+  function setLive(v) { live = v; V.configure(v ? api : null); $("#s-date").classList.toggle("novoice", !v); const b = $("#mode-badge"); b.textContent = v ? "Live AI" : "Demo mode"; b.classList.toggle("live", v); }
   async function detect() {
     if (C.FORCE_DEMO) return setLive(false);
     api = C.API_URL || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "/api/chat" : null);
@@ -141,9 +143,9 @@
     $("#s-date").dataset.scene = loc;
     const log = $("#log"); log.innerHTML = ""; curEmo = ""; emotion("neutral");
     bubble(log, "sys", `Night ${S.day} · ${LOCS[loc].name}` + (live ? "" : " · demo"));
-    if (resumed && S.history.length) { S.history.forEach(m => bubble(log, m.role === "user" ? "me" : "her", m.content)); }
+    if (resumed && S.history.length) { S.history.forEach(m => bubble(log, m.role === "user" ? "me" : "her", m.content, m.voice)); }
     else { const o = FB.opener(S.day, loc, S.memories); S.history.push({ role: "assistant", content: o }); emotion("smile"); save();
-      typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", o); }, 900); }
+      typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", o); say(o); }, 900); }
     suggestions(); lockComposer(S.turns >= C.TURNS_PER_DATE);
     show("s-date");
   }
@@ -155,21 +157,21 @@
     SUGGEST[S.location].forEach((t, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.animationDelay = (0.9 + i * 0.07) + "s"; b.onclick = () => { haptic(); send(t); }; box.appendChild(b); });
   }
 
-  async function send(text) {
+  async function send(text, voice) {
     text = String(text || "").trim(); if (!text || busy) return;
     if (S.turns >= C.TURNS_PER_DATE) return toast("The night is winding down");
     if (left() <= 0) return paywall();
     busy = true; $("#chat-input").value = ""; composerState(); $("#suggest").innerHTML = "";
-    const log = $("#log"); bubble(log, "me", text); haptic(6);
+    V.stop(); const log = $("#log"); bubble(log, "me", text, voice); haptic(6);
     setTimeout(() => busy && typing(log, true), 350);
     const res = await brain("chat", { message: text });
     spend(); typing(log, false);
-    S.history.push({ role: "user", content: text }, { role: "assistant", content: res.reply });
-    S.turns++; bubble(log, "her", res.reply); emotion(res.emotion); delta(res.affection_delta); applyAffection(res.affection_delta || 0);
+    S.history.push(voice ? { role: "user", content: text, voice: 1 } : { role: "user", content: text }, { role: "assistant", content: res.reply });
+    S.turns++; bubble(log, "her", res.reply); say(res.reply); emotion(res.emotion); delta(res.affection_delta); applyAffection(res.affection_delta || 0);
     busy = false; save();
     if (S.turns >= C.TURNS_PER_DATE) {
       const bye = S.affection >= 50 ? "It's getting late… but I really don't want tonight to end." : "It's getting late. I should head home.";
-      setTimeout(() => { typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", bye); S.history.push({ role: "assistant", content: bye }); save(); lockComposer(true); }, 900); }, 600);
+      setTimeout(() => { typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", bye); say(bye); S.history.push({ role: "assistant", content: bye }); save(); lockComposer(true); }, 900); }, 600);
     }
   }
   function paywall() {
@@ -178,23 +180,23 @@
       <a class="btn glass" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`);
   }
   function confirmEnd() {
-    if (busy) return;
+    if (busy) return; recCancel(); V.stop();
     if (S.turns >= C.TURNS_PER_DATE) return endDate();
     modal(`<h3>End the date?</h3><p>${S.turns ? "Elena will remember tonight. You'll text afterwards." : "Leaving without a word won't go down well."}</p>
       <button class="btn primary" type="button" id="sh-end">End the date</button><button class="btn glass" type="button" data-close>Keep talking</button>`);
     $("#sh-end").onclick = () => { closeSheet(); endDate(); };
   }
   function statusSheet() {
-    const a = S.affection, snd = localStorage.getItem("afterglow.sound") === "1";
+    const a = S.affection, snd = V.enabled();
     modal(`<div class="app-row"><img src="${img("elena_card")}" alt="" style="border-radius:50%;object-fit:cover;object-position:50% 18%"><div><b>Elena</b><small>${level(a)} · ${a} of 100</small></div></div>
       <div class="rows"><div class="bar-l" style="margin-top:14px"><i style="width:${a}%"></i></div>
         <div class="row">Night<span>${S.day} of 3</span></div>
         ${S.phase === "date" ? `<div class="row">Messages this date<span>${S.turns} of ${C.TURNS_PER_DATE}</span></div>` : ""}
         <div class="row">Free messages today<span>${left()} left</span></div>
         <div class="row">AI<span>${live ? "Live" : "Demo mode"}</span></div>
-        <div class="row">Sound<button class="switch ${snd ? "on" : ""}" id="sh-snd" type="button" aria-label="Sound"></button></div></div>
+        <div class="row">Elena's voice<button class="switch ${snd ? "on" : ""}" id="sh-snd" type="button" aria-label="Sound"></button></div></div>
       <button class="btn glass" type="button" data-close>Done</button>`);
-    $("#sh-snd").onclick = e => { const on = !e.currentTarget.classList.contains("on"); e.currentTarget.classList.toggle("on", on); setSound(on); haptic(); if (on) toast("Voice & music arrive in the next update"); };
+    $("#sh-snd").onclick = e => { const on = !e.currentTarget.classList.contains("on"); e.currentTarget.classList.toggle("on", on); setSound(on); haptic(); if (on && !live) toast("Voice needs the live AI"); };
   }
   async function endDate() {
     if (busy) return;
@@ -272,10 +274,93 @@
   };
   $$(".pcard").forEach(c => { const k = c.id.replace("card-", ""); c.onclick = () => PICK[k](); c.onkeydown = e => { if (e.key === "Enter") PICK[k](); }; });
   const deck = $("#deck"); deck.addEventListener("scroll", () => { const i = Math.round(deck.scrollLeft / deck.clientWidth); $$("#deck-dots i").forEach((d, j) => d.classList.toggle("on", i === j)); }, { passive: true });
-  // sound toggle (placeholder until voice ships)
-  function setSound(on) { localStorage.setItem("afterglow.sound", on ? "1" : "0"); $$(".icon-btn.sound").forEach(b => { b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Sound on" : "Sound off"); }); }
-  $$(".icon-btn.sound").forEach(b => b.onclick = () => { haptic(); const on = localStorage.getItem("afterglow.sound") !== "1"; setSound(on); toast(on ? "Voice & music arrive in the next update" : "Sound off"); });
-  setSound(localStorage.getItem("afterglow.sound") === "1");
+  // ---------- voice: Elena speaks ----------
+  function setSound(on) { V.setEnabled(on); $$(".icon-btn.sound").forEach(b => { b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Elena's voice on" : "Elena's voice off"); }); }
+  $$(".icon-btn.sound").forEach(b => b.onclick = () => { haptic(); const on = !V.enabled(); setSound(on); toast(on ? (live ? "Elena's voice on" : "Voice needs the live AI") : "Voice off"); });
+  setSound(V.enabled());
+  function say(text) { if (live && V.enabled() && $("#s-date").classList.contains("active")) V.speak(text); }
+  V.onSpeaking = (on, key) => {
+    $("#s-date").classList.toggle("speaking", on);
+    $$("#log .msg.her.playing").forEach(m => m.classList.remove("playing"));
+    if (on) { const m = [...$$("#log .msg.her")].reverse().find(x => x.dataset.say === key); if (m) m.classList.add("playing"); }
+  };
+  V.onBlocked = () => toast("Tap her message to hear Elena");
+  $("#log").addEventListener("click", e => { // tap a bubble to replay / stop her voice
+    const m = e.target.closest(".msg.her[data-say]"); if (!m || !live) return;
+    if (V.isPlaying(m.dataset.say)) return V.stop();
+    haptic(); V.speak(m.dataset.say, true);
+  });
+
+  // ---------- voice: player records English voice messages ----------
+  const MAX_REC = 30, form = $("#chat-form"), mic = $("#mic");
+  let recState = "idle", recT0 = 0, recTimer = 0, downAt = 0, holdMode = false;
+  function recUI(st) {
+    recState = st; form.classList.toggle("recording", st === "rec" || st === "starting"); form.classList.toggle("transcribing", st === "stt");
+    mic.setAttribute("aria-label", st === "rec" ? "Send voice message" : "Record a voice message");
+    if (st === "idle") { clearInterval(recTimer); $("#rec-time").textContent = "0:00"; form.style.removeProperty("--lvl"); }
+  }
+  function micSheet() {
+    modal(`<h3>Microphone is off</h3><p>To send voice messages, allow microphone access for this site — in Safari tap <b>aA</b> → Website Settings → Microphone, in Chrome tap the lock icon → Permissions. Then try again.</p>
+      <button class="btn primary" type="button" data-close>Got it</button>`);
+  }
+  async function recStart() {
+    if (recState !== "idle" || busy) return;
+    if (S.turns >= C.TURNS_PER_DATE) return toast("The night is winding down");
+    if (left() <= 0) return paywall();
+    if (!live) return toast("Voice messages need the live AI");
+    if (!V.canRecord()) return toast("Voice messages aren't supported in this browser — type instead");
+    recUI("starting"); $("#rec-hint").textContent = "Allow the microphone…";
+    try {
+      await V.start(l => form.style.setProperty("--lvl", l.toFixed(2)));
+    } catch (e) {
+      recUI("idle");
+      if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) return micSheet();
+      if (e && (e.name === "NotFoundError" || e.name === "OverconstrainedError")) return toast("No microphone found");
+      return toast("Couldn't start the microphone");
+    }
+    if (recState !== "starting") { V.cancel(); return; }       // cancelled while asking
+    recUI("rec"); recT0 = Date.now(); haptic(14);
+    // released before the permission prompt finished → switch to tap-to-send
+    if (!holdMode || !downAt) holdMode = false;
+    $("#rec-hint").textContent = holdMode ? "Release to send" : "Tap ↑ to send";
+    recTimer = setInterval(() => {
+      const s = Math.floor((Date.now() - recT0) / 1000); $("#rec-time").textContent = `0:${String(Math.min(s, MAX_REC)).padStart(2, "0")}`;
+      if (s >= MAX_REC - 5) $("#rec-hint").textContent = `${MAX_REC - s}s left`;
+      if (s >= MAX_REC) recStop();
+    }, 250);
+  }
+  function recCancel() { if (recState === "idle") return; V.cancel(); recUI("idle"); }
+  async function recStop() {
+    if (recState !== "rec") return;
+    const dur = (Date.now() - recT0) / 1000; clearInterval(recTimer);
+    if (dur < 0.8) { V.cancel(); recUI("idle"); return toast("Hold to talk · or tap, speak, tap ↑"); }
+    recUI("stt"); haptic(8); $("#rec-hint").textContent = "Transcribing…";
+    const blob = await V.finish();
+    if (!blob || blob.size < 800) { recUI("idle"); return toast("Didn't catch that — try again"); }
+    let text = "";
+    try { text = await V.transcribe(blob); }
+    catch (e) { recUI("idle"); return toast(/rate/.test(e.message) ? "Slow down a little 🙂" : /too_long|too_large/.test(e.message) ? "Keep it under 30 seconds" : "Couldn't hear that — try again"); }
+    recUI("idle");
+    if (!text) return toast("Didn't catch that — try again");
+    send(text, true);
+  }
+  mic.addEventListener("pointerdown", e => {
+    if (e.button > 0) return; e.preventDefault();
+    if (recState === "rec") { recStop(); return; }                // tap mode: second tap sends
+    if (recState !== "idle") return;
+    downAt = Date.now(); holdMode = true; try { mic.setPointerCapture(e.pointerId); } catch {}
+    recStart();
+  });
+  const release = () => {
+    if (!downAt) return; const held = Date.now() - downAt; downAt = 0;
+    if (recState === "rec" && holdMode && held > 450) recStop();     // hold-to-talk: release sends
+    else holdMode = false;                                           // quick tap: keep recording, tap ↑ to send
+    if (recState === "rec") $("#rec-hint").textContent = holdMode ? "Release to send" : "Tap ↑ to send";
+  };
+  mic.addEventListener("pointerup", release); mic.addEventListener("pointercancel", release);
+  mic.addEventListener("contextmenu", e => e.preventDefault());
+  mic.addEventListener("click", e => { if (e.detail === 0) { recState === "rec" ? recStop() : recState === "idle" && (holdMode = false, recStart()); } }); // keyboard
+  $("#rec-cancel").onclick = () => { haptic(); recCancel(); toast("Voice message discarded"); };
   $$(".loc").forEach(b => b.onclick = () => { haptic(); enterDate(b.dataset.loc); });
   $("#chat-form").onsubmit = e => { e.preventDefault(); send($("#chat-input").value); };
   $("#chat-input").oninput = composerState;
@@ -311,5 +396,5 @@
     setTimeout(() => $("#loader").classList.add("done"), 6000);
     setTimeout(() => installHint(), 4500);
   })();
-  window.__afterglow = { get state() { return S; }, ending, setLive, paywall, installHint, statusSheet, closeSheet }; // debug hook
+  window.__afterglow = { get state() { return S; }, ending, setLive, paywall, installHint, statusSheet, closeSheet, voice: V, get recState() { return recState; } }; // debug hook
 })();

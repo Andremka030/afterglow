@@ -10,11 +10,14 @@ LLM_MODEL = "grok-4.20-0309-non-reasoning"
 # Comma-separated list of sites allowed to call this proxy
 ALLOWED_ORIGINS = "https://andremka030.github.io,http://localhost:8080,http://localhost:8090,http://127.0.0.1:8080,http://localhost:8787"
 RATE_PER_MIN = "20"
-RATE_PER_DAY = "300"   # per IP / IPv6 /48, all routes (chat+summary+tts)
+RATE_PER_DAY = "300"   # per IP / IPv6 /48, all routes (chat+summary+tts+stt)
 MAX_USER_CHARS = "400"
 # Voice (POST /tts {text}) — xAI TTS, uses the same LLM_API_KEY (xAI key)
 TTS_VOICE = "ara"
-TTS_MAX_CHARS = "600"
+TTS_MAX_CHARS = "400"   # hard cap per spoken reply ($15 / 1M chars)
+# Voice messages (POST /stt, raw audio body) — xAI grok-voice-transcribe-2.0, English
+STT_MAX_BYTES = "1500000"
+STT_MAX_SECONDS = "30"
 
 # The API key is NOT here. Set it as a secret:
 #   npx wrangler secret put LLM_API_KEY

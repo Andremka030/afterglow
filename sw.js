@@ -1,6 +1,6 @@
-// Afterglow service worker: caches the static app shell + art. Never touches the AI API (cross-origin) or POSTs.
-const VERSION = "afterglow-v2.0.1";
-const CORE = ["./", "index.html", "style.css", "js/config.js", "js/fallback.js", "js/game.js", "manifest.webmanifest",
+// Afterglow service worker: caches the static app shell + art. Never touches the AI/TTS/STT proxy (cross-origin) or POSTs.
+const VERSION = "afterglow-v2.1.0";
+const CORE = ["./", "index.html", "style.css", "js/config.js", "js/fallback.js", "js/voice.js", "js/game.js", "manifest.webmanifest",
   "assets/fonts/Inter-var.woff2", "assets/img/title_p.webp", "assets/img/p_elena.webp", "assets/img/bg_hotel_p.webp",
   "assets/img/elena_neutral.webp", "assets/img/elena_smile.webp", "assets/img/elena_card.webp", "assets/img/icon-192.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });

@@ -85,6 +85,7 @@
     <header class="bar chat-bar">
       <button class="icon-btn" id="end-date" type="button" aria-label="End the date">‹</button>
       <div class="who"><img src="assets/img/elena_card.webp" alt=""><div><b>Elena</b><small><i class="online"></i><span id="emotion-tag">online</span></small></div></div>
+      <button class="icon-btn sound" id="voice-btn" type="button" aria-label="Elena's voice off"></button>
       <button class="ring hud-ring" id="ring-btn" type="button" aria-label="Relationship"></button>
     </header>
     <span class="delta" id="delta"></span>
@@ -93,6 +94,8 @@
       <div class="suggest" id="suggest"></div>
       <form class="composer" id="chat-form" autocomplete="off">
         <input id="chat-input" maxlength="400" placeholder="Message" enterkeyhint="send">
+        <div class="rec" id="rec" aria-live="polite"><button type="button" class="rec-x" id="rec-cancel" aria-label="Cancel recording"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button><i class="rec-dot"></i><span class="rec-time" id="rec-time">0:00</span><span class="rec-wave" id="rec-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="rec-hint" id="rec-hint">Release to send</span></div>
+        <button type="button" class="mic" id="mic" aria-label="Record a voice message"><svg class="i-mic" viewBox="0 0 24 24" width="21" height="21"><rect x="9" y="3" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="i-up" viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="spin"></i></button>
         <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </form>
       <button class="btn primary" id="walk-home" type="button" hidden>Walk her home</button>
@@ -140,6 +143,7 @@
 <script>document.addEventListener("error",e=>{if(e.target.tagName==="IMG")e.target.style.visibility="hidden"},true);document.addEventListener("load",e=>{if(e.target.tagName==="IMG")e.target.style.visibility=""},true);</script>
 <script src="js/config.js"></script>
 <script src="js/fallback.js"></script>
+<script src="js/voice.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

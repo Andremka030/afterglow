@@ -23,9 +23,10 @@ Edit `[vars]` in `wrangler.toml` (`LLM_BASE_URL`, `LLM_MODEL`) and re-deploy. An
 `https://afterglow-proxy.andremka030.workers.dev`. Routes:
 - `GET /health` returns `{ok, hasKey}`.
 - `POST /chat` handles chat, summary and phone texts.
-- `POST /tts {text, language?}` returns an mp3 (xAI TTS, voice `TTS_VOICE`, default `ara`).
+- `POST /tts {text, language?}` returns an mp3 (xAI TTS, voice `TTS_VOICE`, default `ara`). Text is capped at `TTS_MAX_CHARS` (400).
+- `POST /stt` with a raw audio body (`Content-Type: audio/webm`, `audio/mp4`, `audio/ogg`, `audio/mpeg` or `audio/wav`) returns `{text, duration}`: English transcription via xAI `grok-voice-transcribe-2.0`. Capped at `STT_MAX_BYTES` (1.5 MB) and about 30 s.
 
 ## Protection
 - `ALLOWED_ORIGINS`: only these sites can call it. Other origins, or requests with no Origin header, get 403.
-- Rate limit: a Durable Object counter (`Limiter`) enforces exactly `RATE_PER_MIN` (20) POSTs per minute and `RATE_PER_DAY` (300) per day. It counts per IPv4 address, or per IPv6 /48 because IPv6 clients rotate addresses. The Cloudflare `RATE_LIMITER` binding is a secondary check.
+- Rate limit: a Durable Object counter (`Limiter`) enforces exactly `RATE_PER_MIN` (20) POSTs per minute (chat, tts and stt all count) and `RATE_PER_DAY` (300) per day. It counts per IPv4 address, or per IPv6 /48 because IPv6 clients rotate addresses. The Cloudflare `RATE_LIMITER` binding is a secondary check.
 - Set a monthly spend cap in the xAI console as well.
