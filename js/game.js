@@ -193,7 +193,7 @@
   let pendingGift = null;
   function giftCards() {
     return `<div class="gifts">${GIFTS.map((g, i) => `<a class="gift${i === 1 ? " top" : ""}" data-gid="${g.id}" href="${esc(g.url || C.KOFI_URL)}" target="_blank" rel="noopener"><i>${g.emoji}</i><b>${esc(g.name)}</b><span>$${g.price}</span></a>`).join("")}</div>
-      <p class="foot">Gifts support the indie dev who made this game. ${GIFTS.some(g => !g.url) ? "You'll pay on Buy Me a Coffee — just enter the gift's amount there." : "Secure checkout on Buy Me a Coffee."}</p>`;
+      <p class="foot">Gifts support the indie dev who made this game. Secure checkout with PayPal.</p>`;
   }
   function bindGifts() {
     $$("#modal-body [data-gid]").forEach(a => a.addEventListener("click", () => {

@@ -9,11 +9,11 @@ window.AFTERGLOW_CONFIG = {
   PREMIUM_PRICE: "$2.99",
   FORCE_DEMO: false,                               // true = never call the API
   // In-game gifts for Elena = tips on Buy Me a Coffee (honor system: BMC can't report back, so she thanks you when you return).
-  // Each gift links to a fixed-price Buy Me a Coffee shop item (redirects back to the game after purchase).
+  // Each gift opens PayPal.Me with the amount pre-filled. KOFI_URL (Buy Me a Coffee) stays as the general fallback.
   GIFTS: [
-    { id: "champagne", emoji: "🥂", name: "Glass of champagne", price: 3, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588804 (enable when published) */ },
-    { id: "flowers",   emoji: "💐", name: "Flowers",            price: 5, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588805 (enable when published) */ },
-    { id: "dinner",    emoji: "🍽️", name: "Dinner for two",     price: 10, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588806 (enable when published) */ },
+    { id: "champagne", emoji: "🥂", name: "Glass of champagne", price: 3, url: "https://paypal.me/AndreiNizovtsev/3USD" },
+    { id: "flowers",   emoji: "💐", name: "Flowers",            price: 5, url: "https://paypal.me/AndreiNizovtsev/5USD" },
+    { id: "dinner",    emoji: "🍽️", name: "Dinner for two",     price: 10, url: "https://paypal.me/AndreiNizovtsev/10USD" },
   ],
   GIFT_AFFECTION: 5,                               // affection boost, at most once per date
 };
