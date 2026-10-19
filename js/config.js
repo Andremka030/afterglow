@@ -11,9 +11,9 @@ window.AFTERGLOW_CONFIG = {
   // In-game gifts for Elena = tips on Buy Me a Coffee (honor system: BMC can't report back, so she thanks you when you return).
   // Each gift links to a fixed-price Buy Me a Coffee shop item (redirects back to the game after purchase).
   GIFTS: [
-    { id: "champagne", emoji: "🥂", name: "Glass of champagne", price: 3, url: "https://buymeacoffee.com/citadelxcom/e/588804" },
-    { id: "flowers",   emoji: "💐", name: "Flowers",            price: 5, url: "https://buymeacoffee.com/citadelxcom/e/588805" },
-    { id: "dinner",    emoji: "🍽️", name: "Dinner for two",     price: 10, url: "https://buymeacoffee.com/citadelxcom/e/588806" },
+    { id: "champagne", emoji: "🥂", name: "Glass of champagne", price: 3, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588804 (enable when published) */ },
+    { id: "flowers",   emoji: "💐", name: "Flowers",            price: 5, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588805 (enable when published) */ },
+    { id: "dinner",    emoji: "🍽️", name: "Dinner for two",     price: 10, url: "" /* shop item: https://buymeacoffee.com/citadelxcom/e/588806 (enable when published) */ },
   ],
   GIFT_AFFECTION: 5,                               // affection boost, at most once per date
 };
