@@ -205,6 +205,7 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .seg button.on{background:rgba(255,255,255,.16);color:var(--txt)}
 .replies{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-bottom:12px}
 .replies:empty{display:none}
+.replies button{max-width:100%;height:auto;min-height:38px;padding:9px 15px;white-space:normal;text-align:right;line-height:1.3}
 .mem{padding:16px;border-radius:20px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.07);font-size:15px;line-height:1.45;color:var(--mut);animation:pop .4s var(--spring) both}
 .mem b{display:block;font-size:13px;font-weight:650;color:var(--txt);margin-bottom:6px}
 .mems{gap:10px}
@@ -240,6 +241,29 @@ img{display:block;-webkit-user-drag:none;user-select:none}
 .switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .3s var(--spring)}
 .switch.on{background:var(--acc)}.switch.on::after{transform:translateX(20px)}
 .ios-share{display:inline-block;width:18px;height:18px;vertical-align:-3px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v8h14v-8'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v8h14v-8'/%3E%3C/svg%3E") center/contain no-repeat}
+/* gifts for Elena (tips) */
+.gift-btn{width:40px;height:40px;flex:none;margin-left:-12px;border-radius:50%;display:grid;place-items:center;color:var(--acc-2);background:rgba(240,71,111,.14);transition:transform .2s var(--spring),background .2s}
+.gift-btn:active{transform:scale(.88);background:rgba(240,71,111,.3)}
+.gift-btn.big{width:56px;height:56px;margin:0;background:rgba(240,71,111,.16);border:1px solid rgba(240,71,111,.4);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
+.composer.recording .gift-btn,.composer.transcribing .gift-btn{display:none}
+.dock-row{display:flex;gap:10px;align-items:center}.dock-row .btn{flex:1}
+#s-date .dock{position:relative}
+.gift-tip{position:absolute;left:calc(12px + var(--sl));bottom:calc(100% - 2px);padding:9px 13px;border-radius:14px 14px 14px 4px;background:#fff;color:#0e0c10;font-size:13.5px;font-weight:600;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.35);animation:pop .4s var(--spring) both;z-index:6;pointer-events:none}
+.gift-tip::after{content:"";position:absolute;left:14px;top:100%;border:7px solid transparent;border-top-color:#fff;border-left-width:0}
+.quota-line{text-align:center;margin:8px 0 -3px;font-size:12px;color:var(--dim);letter-spacing:-.005em}
+.quota-line.low{color:var(--acc-2)}
+.quota-line:empty{display:none}
+.gift-sheet h3{display:flex;align-items:center;gap:10px}
+.gifts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0 16px}
+.gift{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:132px;padding:14px 6px 12px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);text-align:center;transition:transform .18s var(--ease),background .2s,border-color .2s}
+.gift:active{transform:scale(.95);background:rgba(240,71,111,.18);border-color:rgba(240,71,111,.5)}
+.gift i{font-style:normal;font-size:36px;line-height:1.1;margin-bottom:4px}
+.gift b{font-size:14px;font-weight:650;line-height:1.2;letter-spacing:-.015em}
+.gift span{font-size:14px;font-weight:600;color:var(--acc-2)}
+.gift.top{background:rgba(240,71,111,.12);border-color:rgba(240,71,111,.38)}
+.sheet p.foot{font-size:12.5px;color:var(--dim);line-height:1.4;margin:0 0 16px;text-align:center}
+.sheet a.row.link{color:var(--txt)}.sheet a.row.link span,.sheet button.row.link span{color:var(--acc-2);font-weight:600}
+.sheet button.row.link{width:100%;text-align:left}
 .app-row{display:flex;align-items:center;gap:14px;margin-bottom:16px}.app-row img{width:60px;height:60px;border-radius:15px}
 .app-row b{display:block;font-size:17px;font-weight:700}.app-row small{font-size:14px;color:var(--mut)}
 

@@ -60,7 +60,8 @@
     const a = S.affection;
     $$(".ring.hud-ring").forEach(e => { const fg = e.querySelector(".rg-fg"); if (fg) { fg.style.strokeDashoffset = CIRC * (1 - a / 100); e.querySelector("b").textContent = a; } else e.innerHTML = ringSvg(a) + `<b>${a}</b>`; });
     $$(".pill-meter.hud-ring").forEach(e => e.innerHTML = `<span class="rg">${ringSvg(a)}${a}</span>${level(a)}`);
-    const l = left(); $("#chat-input").placeholder = l <= 10 ? `Message · ${l} left today` : "Message";
+    const l = left(), q = $("#quota-line");
+    q.textContent = l ? `${l} free message${l === 1 ? "" : "s"} left today` : "No free messages left · they reset tomorrow"; q.classList.toggle("low", l <= 5);
   }
   const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const MIC_SVG = '<svg class="vm" viewBox="0 0 24 24" width="13" height="13" aria-label="Voice message"><rect x="9" y="3" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
@@ -143,7 +144,7 @@
     $("#s-date").dataset.scene = loc;
     const log = $("#log"); log.innerHTML = ""; curEmo = ""; emotion("neutral");
     bubble(log, "sys", `Night ${S.day} · ${LOCS[loc].name}` + (live ? "" : " · demo"));
-    if (resumed && S.history.length) { S.history.forEach(m => bubble(log, m.role === "user" ? "me" : "her", m.content, m.voice)); }
+    if (resumed && S.history.length) { S.history.forEach(m => bubble(log, m.role === "user" ? "me" : "her", m.content.replace(/ \([^()]* just treated Elena to [^()]*\)$/, ""), m.voice)); }
     else { const o = FB.opener(S.day, loc, S.memories); S.history.push({ role: "assistant", content: o }); emotion("smile"); save();
       typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", o); say(o); }, 900); }
     suggestions(); lockComposer(S.turns >= C.TURNS_PER_DATE);
@@ -169,16 +170,73 @@
     S.history.push(voice ? { role: "user", content: text, voice: 1 } : { role: "user", content: text }, { role: "assistant", content: res.reply });
     S.turns++; bubble(log, "her", res.reply); say(res.reply); emotion(res.emotion); delta(res.affection_delta); applyAffection(res.affection_delta || 0);
     busy = false; save();
+    if (S.turns === 2 && !localStorage.getItem("afterglow.gifttip")) giftTip();
     if (S.turns >= C.TURNS_PER_DATE) {
       const bye = S.affection >= 50 ? "It's getting late… but I really don't want tonight to end." : "It's getting late. I should head home.";
       setTimeout(() => { typing(log, true); setTimeout(() => { typing(log, false); bubble(log, "her", bye); say(bye); S.history.push({ role: "assistant", content: bye }); save(); lockComposer(true); }, 900); }, 600);
     }
   }
   function paywall() {
-    modal(`<img class="s-img" src="${img("elena_card")}" alt=""><h3>That's all for tonight</h3><p>You've used today's ${C.FREE_MESSAGES_PER_DAY} free messages. They refill tomorrow — Elena will be waiting.</p>
-      <button class="btn primary" type="button" onclick="alert('Unlimited Pass — coming soon!')">Unlimited Pass · soon</button>
-      <a class="btn glass" data-kofi target="_blank" rel="noopener">☕ Buy me a coffee</a>`);
+    modal(`<img class="s-img" src="${img("elena_card")}" alt=""><h3>Elena has to go for tonight</h3><p>You've used today's ${C.FREE_MESSAGES_PER_DAY} free messages. They reset tomorrow, and she'll be waiting. Want to leave her with something sweet?</p>
+      ${giftCards()}<button class="btn glass" type="button" data-close>See you tomorrow</button>`);
+    bindGifts();
   }
+
+  // ---------- gifts for Elena (tips via Buy Me a Coffee, honor system) ----------
+  const GIFTS = C.GIFTS || [];
+  const GIFT_LINES = {
+    champagne: ["Champagne? Okay, now you're just showing off… and I like it. Cheers to you.", "Champagne, just like that? You know how to make a girl feel special.", "To us — and to you, for having taste. This is dangerously good."],
+    flowers: ["Flowers? Nobody does that anymore. I'm keeping one for my camera bag.", "Flowers for me? Okay, they’re beautiful — I’m trying very hard not to blush.", "Wild flowers, not roses? Good instinct. That’s… really sweet."],
+    dinner: ["Dinner? You're officially my favorite person in Port Lumen tonight.", "A real dinner date. Fine, you win — I'm smiling and I can't stop.", "Dinner, just for me? I’m saving this one in my memory, not just my photos."],
+  };
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  let pendingGift = null;
+  function giftCards() {
+    return `<div class="gifts">${GIFTS.map((g, i) => `<a class="gift${i === 1 ? " top" : ""}" data-gid="${g.id}" href="${esc(g.url || C.KOFI_URL)}" target="_blank" rel="noopener"><i>${g.emoji}</i><b>${esc(g.name)}</b><span>$${g.price}</span></a>`).join("")}</div>
+      <p class="foot">Gifts support the indie dev who made this game. Secure checkout on Buy Me a Coffee.</p>`;
+  }
+  function bindGifts() {
+    $$("#modal-body [data-gid]").forEach(a => a.addEventListener("click", () => {
+      haptic(10); pendingGift = { id: a.dataset.gid, at: Date.now() };
+      try { sessionStorage.setItem("afterglow.gift", JSON.stringify(pendingGift)); } catch {}
+    }));
+  }
+  function giftTip(ms = 5000) { // one-time hint pointing at the gift button
+    localStorage.setItem("afterglow.gifttip", "1"); const t = $("#gift-tip"); t.hidden = false;
+    clearTimeout(giftTip.t); giftTip.t = setTimeout(() => t.hidden = true, ms);
+  }
+  function giftSheet() {
+    $("#gift-tip").hidden = true;
+    if (!S) return;
+    modal(`<div class="gift-sheet"><h3>Treat Elena</h3><p>Pick something she'd love tonight. She'll notice — and she won't forget it.</p>${giftCards()}
+      <button class="btn glass" type="button" data-close>Maybe later</button></div>`);
+    bindGifts();
+  }
+  // when the player comes back from the tip page, Elena reacts (once per night she also warms up)
+  function giftReturn() {
+    if (document.hidden) return;
+    if (!pendingGift) { try { pendingGift = JSON.parse(sessionStorage.getItem("afterglow.gift")); } catch {} }
+    const p = pendingGift; if (!p || !S || Date.now() - p.at < 2500) return;
+    pendingGift = null; try { sessionStorage.removeItem("afterglow.gift"); } catch {}
+    const g = GIFTS.find(x => x.id === p.id) || GIFTS[0]; closeSheet();
+    const line = pick(GIFT_LINES[g.id] || GIFT_LINES.champagne), first = S.gifted !== S.day, boost = first ? (C.GIFT_AFFECTION || 5) : 0;
+    S.gifted = S.day; S.gifts = (S.gifts || 0) + 1;
+    setTimeout(() => {
+      if (S.phase === "date" && $("#s-date").classList.contains("active")) {
+        const log = $("#log"); typing(log, true);
+        setTimeout(() => { typing(log, false); bubble(log, "her", line); say(line);
+          S.history.push({ role: "assistant", content: `${line} (${S.playerName} just treated Elena to ${g.name.toLowerCase()})` });
+          emotion(g.id === "flowers" ? "shy" : "smile"); if (boost) { delta(boost); applyAffection(boost); } else save();
+          toast(boost ? `Elena loved the ${g.name.toLowerCase()} ♥` : "She's smiling at you"); }, 1100);
+      } else if (S.phase === "phone") {
+        const box = $("#ph-chat"); $("#ph-status").textContent = "typing…"; typing(box, true);
+        setTimeout(() => { typing(box, false); $("#ph-status").textContent = "online"; const t = line + " " + g.emoji;
+          bubble(box, "her", t); S.phoneLog.push({ day: S.day, t }); if (boost) { applyAffection(boost); toast(`♥ +${boost}`); } else save(); }, 1200);
+      } else { if (boost) applyAffection(boost); toast("Elena says thank you ♥"); }
+    }, 350);
+  }
+  document.addEventListener("visibilitychange", giftReturn); window.addEventListener("focus", giftReturn);
+  $$("[data-gift]").forEach(b => b.onclick = e => { e.preventDefault(); haptic(); giftSheet(); });
   function confirmEnd() {
     if (busy) return; recCancel(); V.stop();
     if (S.turns >= C.TURNS_PER_DATE) return endDate();
@@ -192,10 +250,12 @@
       <div class="rows"><div class="bar-l" style="margin-top:14px"><i style="width:${a}%"></i></div>
         <div class="row">Night<span>${S.day} of 3</span></div>
         ${S.phase === "date" ? `<div class="row">Messages this date<span>${S.turns} of ${C.TURNS_PER_DATE}</span></div>` : ""}
-        <div class="row">Free messages today<span>${left()} left</span></div>
+        <div class="row">Free messages today<span>${left()} of ${C.FREE_MESSAGES_PER_DAY} left</span></div>
+        <button class="row link" type="button" id="sh-gift">Treat Elena<span>Send a gift ›</span></button>
         <div class="row">AI<span>${live ? "Live" : "Demo mode"}</span></div>
         <div class="row">Elena's voice<button class="switch ${snd ? "on" : ""}" id="sh-snd" type="button" aria-label="Sound"></button></div></div>
       <button class="btn glass" type="button" data-close>Done</button>`);
+    $("#sh-gift").onclick = () => giftSheet();
     $("#sh-snd").onclick = e => { const on = !e.currentTarget.classList.contains("on"); e.currentTarget.classList.toggle("on", on); setSound(on); haptic(); if (on && !live) toast("Voice needs the live AI"); };
   }
   async function endDate() {
@@ -396,5 +456,5 @@
     setTimeout(() => $("#loader").classList.add("done"), 6000);
     setTimeout(() => installHint(), 4500);
   })();
-  window.__afterglow = { get state() { return S; }, ending, setLive, paywall, installHint, statusSheet, closeSheet, voice: V, get recState() { return recState; } }; // debug hook
+  window.__afterglow = { giftSheet, giftReturn, giftTip, get state() { return S; }, ending, setLive, paywall, installHint, statusSheet, closeSheet, voice: V, get recState() { return recState; } }; // debug hook
 })();

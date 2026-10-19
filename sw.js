@@ -1,5 +1,5 @@
 // Afterglow service worker: caches the static app shell + art. Never touches the AI/TTS/STT proxy (cross-origin) or POSTs.
-const VERSION = "afterglow-v2.1.0";
+const VERSION = "afterglow-v2.2.0";
 const CORE = ["./", "index.html", "style.css", "js/config.js", "js/fallback.js", "js/voice.js", "js/game.js", "manifest.webmanifest",
   "assets/fonts/Inter-var.woff2", "assets/img/title_p.webp", "assets/img/p_elena.webp", "assets/img/bg_hotel_p.webp",
   "assets/img/elena_neutral.webp", "assets/img/elena_smile.webp", "assets/img/elena_card.webp", "assets/img/icon-192.png"];

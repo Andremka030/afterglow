@@ -9,6 +9,8 @@ and her mood and affection react to what you say. Four locations (Lumen Hotel, S
 a phone between dates, and 3 endings. It's a static site for GitHub Pages and needs no build step. The AI runs through a small
 Cloudflare Worker, so no key ever reaches the browser. Without the proxy, the game falls back to a scripted demo mode.
 
+**Free to play:** 20 AI messages per day (voice messages count too); they reset daily. The 🎁 button next to the message box lets you *treat Elena*: champagne, flowers or dinner. These are real tips to the developer on Buy Me a Coffee (honor system), and Elena thanks you in the story with a small affection boost, once per night. Gifts and prices are in `GIFTS` in `js/config.js`.
+
 **Voice:** Elena speaks her replies aloud (xAI TTS, voice *Ara*; tap the speaker in the date header to mute, tap any of her messages to replay it). You can answer with **English voice messages**: tap the mic (or hold to talk), speak, and send. It's transcribed by xAI `grok-voice-transcribe-2.0` and works in iOS Safari and Android Chrome.
 
 Built mobile-first, like an app: full-screen portrait art, chat bubbles over Elena, swipe cards, bottom sheets.
